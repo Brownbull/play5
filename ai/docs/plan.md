@@ -46,17 +46,17 @@ An adaptive external brain that transforms messy notes into structured, actionab
   - [x] Create AI service module for model calls
   - [x] Test basic model connectivity
 
-- [ ] **Task 5: Implement note parsing pipeline with NER and classification**
-  - [ ] Build named entity recognition pipeline
-  - [ ] Implement intent classification logic
-  - [ ] Create item extraction from notes functionality
-  - [ ] Add error handling for AI service calls
+- [x] **Task 5: Implement note parsing pipeline with NER and classification**
+  - [x] Build named entity recognition pipeline
+  - [x] Implement intent classification logic
+  - [x] Create item extraction from notes functionality
+  - [x] Add error handling for AI service calls
 
-- [ ] **Task 6: Build tag suggestion engine (3 tags max per item)**
-  - [ ] Implement tag generation based on item content
-  - [ ] Create tag scoring and selection logic
-  - [ ] Add predefined tag categories system
-  - [ ] Ensure maximum 3 tags per item constraint
+- [x] **Task 6: Build tag suggestion engine (3 tags max per item)**
+  - [x] Implement tag generation based on item content
+  - [x] Create tag scoring and selection logic
+  - [x] Add predefined tag categories system
+  - [x] Ensure maximum 3 tags per item constraint
 
 ---
 

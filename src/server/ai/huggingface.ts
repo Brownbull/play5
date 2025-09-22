@@ -172,12 +172,8 @@ export class HuggingFaceService {
   // Suggest tags based on item content
   async suggestTags(itemContent: string, availableTags: string[]): Promise<string[]> {
     try {
-      console.log('🔍 HF_MODEL_CLASSIFICATION:', HF_MODEL_CLASSIFICATION)
-      console.log('🔍 Using DistilBERT path:', HF_MODEL_CLASSIFICATION === 'distilbert-base-uncased')
-
       // If using DistilBERT, use a simpler approach with text analysis
       if (HF_MODEL_CLASSIFICATION === 'distilbert-base-uncased') {
-        console.log('🎯 Taking DistilBERT path')
         return await this.suggestTagsWithDistilBERT(itemContent, availableTags)
       }
 
@@ -206,8 +202,6 @@ export class HuggingFaceService {
         throw new Error('HUGGINGFACE_API_KEY not configured')
       }
 
-      console.log('🤖 DistilBERT tag suggestion for:', itemContent)
-      console.log('🏷️ Available tags:', availableTags)
 
       // Use DistilBERT for classification by creating pseudo-labels
       // This approach works better than feature extraction for tag classification
@@ -331,30 +325,138 @@ export class HuggingFaceService {
     return result
   }
 
-  // Parse note into multiple items
+  // Parse note into multiple items using NER and linguistic patterns
   async parseNote(noteText: string): Promise<string[]> {
     try {
-      // Extract entities to identify separate items
+      // Step 1: Extract entities to understand content structure
       const entities = await this.extractEntities(noteText)
-      
-      // Simple heuristic: split by sentences and filter meaningful ones
+
+      // Step 2: Identify different types of items using patterns
+      const items = await this.extractItemsFromNote(noteText, entities)
+
+      return items.length > 0 ? items : [noteText.trim()]
+    } catch (error) {
+      console.error('Note parsing failed:', error)
+      // Return original text as fallback
+      return [noteText.trim()]
+    }
+  }
+
+  // Advanced item extraction using NER and pattern recognition
+  private async extractItemsFromNote(noteText: string, entities: NEREntity[]): Promise<string[]> {
+    const items: string[] = []
+
+    // Patterns for different types of items
+    const patterns = {
+      // Shopping/buying patterns
+      shopping: /(?:buy|get|pick up|purchase|need)\s+([^.!?]+)/gi,
+      // Visiting/going patterns
+      visiting: /(?:go to|visit|check out|try)\s+([^.!?]+)/gi,
+      // Doing/action patterns
+      actions: /(?:do|make|cook|prepare|call|email|text)\s+([^.!?]+)/gi,
+      // Reminders
+      reminders: /(?:remember to|don't forget to|remind me to)\s+([^.!?]+)/gi
+    }
+
+    // Extract items based on patterns
+    Object.entries(patterns).forEach(([type, pattern]) => {
+      let match
+      while ((match = pattern.exec(noteText)) !== null) {
+        const item = match[1].trim()
+        if (item.length > 3) { // Filter very short items
+          items.push(item)
+        }
+      }
+    })
+
+    // If no patterns matched, fall back to sentence-based splitting
+    if (items.length === 0) {
       const sentences = noteText
         .split(/[.!?]+/)
         .map(s => s.trim())
         .filter(s => s.length > 10) // Filter out very short fragments
         .filter(s => /[a-zA-Z]/.test(s)) // Must contain letters
-      
+
       // If we have multiple sentences, return them as separate items
       if (sentences.length > 1) {
         return sentences
       }
-      
-      // Otherwise, return the original text as a single item
-      return [noteText.trim()]
+    }
+
+    // Remove duplicates and clean up items
+    const cleanedItems = Array.from(new Set(items))
+      .map(item => item.replace(/^(and|also|then)\s+/i, '').trim())
+      .filter(item => item.length > 3)
+
+    return cleanedItems
+  }
+
+  // Classify the intent/category of a parsed item
+  async classifyItemIntent(itemText: string): Promise<{ category: string, confidence: number }> {
+    try {
+      const categories = [
+        'shopping', 'groceries', 'errands',
+        'restaurants', 'entertainment', 'travel',
+        'work', 'health', 'fitness',
+        'cooking', 'recipes', 'meal-prep',
+        'social', 'family', 'friends',
+        'hobbies', 'learning', 'skills'
+      ]
+
+      if (HF_MODEL_CLASSIFICATION === 'distilbert-base-uncased') {
+        // Use our DistilBERT text analysis approach
+        const relevanceScores = categories.map(category => ({
+          category,
+          confidence: this.calculateTagRelevance(itemText, category)
+        }))
+
+        const topCategory = relevanceScores
+          .sort((a, b) => b.confidence - a.confidence)[0]
+
+        return topCategory || { category: 'general', confidence: 0.1 }
+      } else {
+        // Use zero-shot classification for other models
+        const classification = await this.classifyText(itemText, categories)
+        const topResult = classification[0]
+
+        return {
+          category: topResult?.label || 'general',
+          confidence: topResult?.score || 0.1
+        }
+      }
     } catch (error) {
-      console.error('Note parsing failed:', error)
-      // Return original text as fallback
-      return [noteText.trim()]
+      console.error('Intent classification failed:', error)
+      return { category: 'general', confidence: 0.1 }
+    }
+  }
+
+  // Enhanced entity extraction with better formatting
+  async extractNamedEntities(text: string): Promise<{
+    entities: NEREntity[],
+    locations: string[],
+    persons: string[],
+    organizations: string[]
+  }> {
+    try {
+      const entities = await this.extractEntities(text)
+
+      // Group entities by type
+      const locations = entities
+        .filter(e => e.entity_group === 'LOC')
+        .map(e => e.word)
+
+      const persons = entities
+        .filter(e => e.entity_group === 'PER')
+        .map(e => e.word)
+
+      const organizations = entities
+        .filter(e => e.entity_group === 'ORG')
+        .map(e => e.word)
+
+      return { entities, locations, persons, organizations }
+    } catch (error) {
+      console.error('Named entity extraction failed:', error)
+      return { entities: [], locations: [], persons: [], organizations: [] }
     }
   }
 }

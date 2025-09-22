@@ -116,3 +116,19 @@ action testGoogleAI {
   fn: import { testGoogleAI } from "@src/server/operations",
   entities: [Tag]
 }
+
+// Note Parsing Operations
+action parseNote {
+  fn: import { parseNote } from "@src/server/operations",
+  entities: []
+}
+
+action extractEntities {
+  fn: import { extractEntities } from "@src/server/operations",
+  entities: []
+}
+
+action classifyIntent {
+  fn: import { classifyIntent } from "@src/server/operations",
+  entities: []
+}

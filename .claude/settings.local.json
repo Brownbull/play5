@@ -6,7 +6,8 @@
       "mcp__context7__resolve-library-id",
       "Bash(npm install:*)",
       "Bash(npx tailwindcss init:*)",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

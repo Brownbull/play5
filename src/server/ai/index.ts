@@ -187,6 +187,33 @@ export class UnifiedAIService {
       return ''
     }
   }
+
+  // Extract named entities using current provider (primarily HuggingFace)
+  async extractNamedEntities(text: string): Promise<{
+    entities: any[],
+    locations: string[],
+    persons: string[],
+    organizations: string[]
+  }> {
+    try {
+      // For now, only HuggingFace service has NER implementation
+      return await this.hfService.extractNamedEntities(text)
+    } catch (error) {
+      console.error(`Named entity extraction failed:`, error)
+      return { entities: [], locations: [], persons: [], organizations: [] }
+    }
+  }
+
+  // Classify item intent using current provider
+  async classifyItemIntent(itemText: string): Promise<{ category: string, confidence: number }> {
+    try {
+      // For now, only HuggingFace service has intent classification implementation
+      return await this.hfService.classifyItemIntent(itemText)
+    } catch (error) {
+      console.error(`Intent classification failed:`, error)
+      return { category: 'general', confidence: 0.1 }
+    }
+  }
 }
 
 // Export singleton instance

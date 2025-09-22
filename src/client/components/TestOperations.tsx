@@ -12,6 +12,9 @@ import {
   compareProviders,
   setAIProvider,
   testGoogleAI,
+  parseNote,
+  extractEntities,
+  classifyIntent,
   useQuery
 } from 'wasp/client/operations';
 
@@ -235,6 +238,82 @@ export function TestOperations() {
     setIsLoading(false);
   };
 
+  const testParseNote = async () => {
+    setIsLoading(true);
+    try {
+      const sampleNote = "Buy tomatoes and cheese for Italian pasta tonight. Also visit that new bookstore downtown. Don't forget to call mom about weekend plans.";
+      const result = await parseNote({ noteText: sampleNote });
+
+      if (result.error) {
+        addResult(`❌ Note parsing failed: ${result.error}`);
+      } else {
+        addResult(`✅ Note parsed successfully:`);
+        addResult(`   📝 Original: "${result.originalNote}"`);
+        addResult(`   📦 Extracted ${result.itemCount} items:`);
+        result.extractedItems.forEach((item: string, index: number) => {
+          addResult(`     ${index + 1}. "${item}"`);
+        });
+      }
+    } catch (error) {
+      addResult(`❌ Note parsing test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testExtractEntities = async () => {
+    setIsLoading(true);
+    try {
+      const sampleText = "Meet John at Starbucks in New York City to discuss the Microsoft project.";
+      const result = await extractEntities({ text: sampleText });
+
+      if (result.error) {
+        addResult(`❌ Entity extraction failed: ${result.error}`);
+      } else {
+        addResult(`✅ Entity extraction for "${result.input}":`);
+        if (result.persons.length > 0) {
+          addResult(`   👤 Persons: ${result.persons.join(', ')}`);
+        }
+        if (result.locations.length > 0) {
+          addResult(`   📍 Locations: ${result.locations.join(', ')}`);
+        }
+        if (result.organizations.length > 0) {
+          addResult(`   🏢 Organizations: ${result.organizations.join(', ')}`);
+        }
+        if (result.persons.length === 0 && result.locations.length === 0 && result.organizations.length === 0) {
+          addResult(`   ℹ️ No named entities found`);
+        }
+      }
+    } catch (error) {
+      addResult(`❌ Entity extraction test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testClassifyIntent = async () => {
+    setIsLoading(true);
+    try {
+      const sampleTexts = [
+        "Buy groceries for dinner",
+        "Call the dentist to schedule appointment",
+        "Read the new JavaScript book",
+        "Go to the gym after work"
+      ];
+
+      for (const text of sampleTexts) {
+        const result = await classifyIntent({ text });
+
+        if (result.error) {
+          addResult(`❌ Intent classification failed for "${text}": ${result.error}`);
+        } else {
+          addResult(`✅ "${text}" → Category: ${result.category} (${(result.confidence * 100).toFixed(1)}%)`);
+        }
+      }
+    } catch (error) {
+      addResult(`❌ Intent classification test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-4">Operations Test Panel</h2>
@@ -366,6 +445,36 @@ export function TestOperations() {
             Note: AI features require API keys in .env.server (HUGGINGFACE_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY)
             <br />
             HuggingFace now uses DistilBERT with semantic embeddings for improved tag matching.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-700 mb-2">Note Parsing & NLP</h3>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <button
+              onClick={testParseNote}
+              disabled={isLoading}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test Note Parsing
+            </button>
+            <button
+              onClick={testExtractEntities}
+              disabled={isLoading}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test Entity Extraction
+            </button>
+            <button
+              onClick={testClassifyIntent}
+              disabled={isLoading}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test Intent Classification
+            </button>
+          </div>
+          <p className="text-sm text-gray-500">
+            Test the new note parsing pipeline with NER (Named Entity Recognition) and intent classification.
           </p>
         </div>
       </div>

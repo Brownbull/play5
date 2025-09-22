@@ -13,7 +13,10 @@ import type {
   TestAIProvider,
   CompareProviders,
   SetAIProvider,
-  TestGoogleAI
+  TestGoogleAI,
+  ParseNote,
+  ExtractEntities,
+  ClassifyIntent
 } from 'wasp/server/operations'
 import type { Item, Tag, Activity } from 'wasp/entities'
 import { aiService } from './ai/index'
@@ -595,6 +598,101 @@ export const testGoogleAI: TestGoogleAI<TestGoogleAIInput, any> = async (args, c
       input: args.text,
       error: error instanceof Error ? error.message : 'Unknown error',
       suggestedTags: []
+    };
+  }
+}
+
+// ============================================================================
+// NOTE PARSING OPERATIONS
+// ============================================================================
+
+type ParseNoteInput = {
+  noteText: string;
+}
+
+export const parseNote: ParseNote<ParseNoteInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    const items = await aiService.parseNote(args.noteText);
+
+    return {
+      timestamp: new Date().toISOString(),
+      originalNote: args.noteText,
+      extractedItems: items,
+      itemCount: items.length
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      originalNote: args.noteText,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      extractedItems: [args.noteText], // Fallback to original
+      itemCount: 1
+    };
+  }
+}
+
+type ExtractEntitiesInput = {
+  text: string;
+}
+
+export const extractEntities: ExtractEntities<ExtractEntitiesInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    const result = await aiService.extractNamedEntities(args.text);
+
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      entities: result.entities,
+      locations: result.locations,
+      persons: result.persons,
+      organizations: result.organizations
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      entities: [],
+      locations: [],
+      persons: [],
+      organizations: []
+    };
+  }
+}
+
+type ClassifyIntentInput = {
+  text: string;
+}
+
+export const classifyIntent: ClassifyIntent<ClassifyIntentInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    const result = await aiService.classifyItemIntent(args.text);
+
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      category: result.category,
+      confidence: result.confidence
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      category: 'general',
+      confidence: 0.1
     };
   }
 }
