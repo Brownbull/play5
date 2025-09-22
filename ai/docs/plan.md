@@ -16,13 +16,13 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## <× **Phase 1: Foundation**
+## <ï¿½ **Phase 1: Foundation**
 
-- [ ] **Task 1: Set up Wasp project with authentication and basic UI structure**
-  - [ ] Initialize new Wasp project
-  - [ ] Configure authentication (username/password for MVP)
-  - [ ] Set up basic page routing and navigation
-  - [ ] Add TailwindCSS for styling
+- [x] **Task 1: Set up Wasp project with authentication and basic UI structure**
+  - [x] Initialize new Wasp project
+  - [x] Configure authentication (username/password for MVP)
+  - [x] Set up basic page routing and navigation
+  - [x] Add TailwindCSS for styling
 
 - [ ] **Task 2: Design and implement database schema for Items, Tags, Activities**
   - [ ] Create Prisma models (Item, Tag, Activity, User)
@@ -60,7 +60,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## =» **Phase 3: Core UI**
+## =ï¿½ **Phase 3: Core UI**
 
 - [ ] **Task 7: Create activity-based dashboard with filtering**
   - [ ] Build activity selector component
@@ -82,7 +82,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## >à **Phase 4: Intelligence Features**
+## >ï¿½ **Phase 4: Intelligence Features**
 
 - [ ] **Task 10: Implement 'show less like this' learning feedback system**
   - [ ] Add relevance scoring to items
@@ -120,7 +120,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## ¡ **Phase 6: Polish & Deploy**
+## ï¿½ **Phase 6: Polish & Deploy**
 
 - [ ] **Task 15: Implement real-time updates and notifications**
   - [ ] Add WebSocket support for real-time item updates
@@ -148,7 +148,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## <¯ **Priority Levels**
+## <ï¿½ **Priority Levels**
 
 **Critical MVP (Tasks 1-9)**: Core functionality that makes the app usable  
 **Enhanced MVP (Tasks 10-11)**: Intelligence features that provide main value  
@@ -168,7 +168,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## =Ê **Key Metrics to Track**
+## =ï¿½ **Key Metrics to Track**
 
 - Note parsing accuracy
 - Tag relevance scores
@@ -178,7 +178,7 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ---
 
-## =¡ **Example Data Flow**
+## =ï¿½ **Example Data Flow**
 
 **Input Note**: "Try that Italian place downtown, Giovanni recommended it. Also buy tomatoes for pasta sauce recipe"
 
