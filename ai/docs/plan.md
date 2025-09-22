@@ -62,11 +62,11 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ## =� **Phase 3: Core UI**
 
-- [ ] **Task 7: Create activity-based dashboard with filtering**
-  - [ ] Build activity selector component
-  - [ ] Implement item filtering by activity
-  - [ ] Add activity-specific item displays
-  - [ ] Create responsive dashboard layout
+- [x] **Task 7: Create activity-based dashboard with filtering**
+  - [x] Build activity selector component
+  - [x] Implement item filtering by activity
+  - [x] Add activity-specific item displays
+  - [x] Create responsive dashboard layout
 
 - [ ] **Task 8: Implement manual note input interface**
   - [ ] Build note input form with rich text support
