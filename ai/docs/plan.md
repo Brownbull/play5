@@ -24,17 +24,17 @@ An adaptive external brain that transforms messy notes into structured, actionab
   - [x] Set up basic page routing and navigation
   - [x] Add TailwindCSS for styling
 
-- [ ] **Task 2: Design and implement database schema for Items, Tags, Activities**
-  - [ ] Create Prisma models (Item, Tag, Activity, User)
-  - [ ] Set up many-to-many relationships for Item-Tag mapping
-  - [ ] Run database migrations
-  - [ ] Add seed data for initial activities
+- [x] **Task 2: Design and implement database schema for Items, Tags, Activities**
+  - [x] Create Prisma models (Item, Tag, Activity, User)
+  - [x] Set up many-to-many relationships for Item-Tag mapping
+  - [x] Run database migrations
+  - [x] Add seed data for initial activities
 
-- [ ] **Task 3: Create Wasp operations for core CRUD functionality**
-  - [ ] Define queries: getItems, getItemsByActivity, getTags
-  - [ ] Define actions: createItem, updateItem, deleteItem, createTag
-  - [ ] Implement basic server-side logic
-  - [ ] Add authentication checks to operations
+- [x] **Task 3: Create Wasp operations for core CRUD functionality**
+  - [x] Define queries: getItems, getItemsByActivity, getTags
+  - [x] Define actions: createItem, updateItem, deleteItem, createTag
+  - [x] Implement basic server-side logic
+  - [x] Add authentication checks to operations
 
 ---
 

@@ -5,7 +5,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "mcp__context7__resolve-library-id",
       "Bash(npm install:*)",
-      "Bash(npx tailwindcss init:*)"
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npx ts-node:*)"
     ],
     "deny": [],
     "ask": []

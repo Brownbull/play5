@@ -36,3 +36,52 @@ page DashboardPage {
   component: import { DashboardPage } from "@src/dashboard/DashboardPage",
   authRequired: true
 }
+
+// Entities are now defined in schema.prisma
+
+// ============================================================================
+// CORE OPERATIONS
+// ============================================================================
+
+// Item Operations
+query getItems {
+  fn: import { getItems } from "@src/server/operations",
+  entities: [Item, Tag, Activity, ItemTag]
+}
+
+action createItem {
+  fn: import { createItem } from "@src/server/operations",
+  entities: [Item, Tag, ItemTag]
+}
+
+action updateItem {
+  fn: import { updateItem } from "@src/server/operations",
+  entities: [Item, Tag, ItemTag]
+}
+
+action deleteItem {
+  fn: import { deleteItem } from "@src/server/operations",
+  entities: [Item, ItemTag]
+}
+
+action updateItemRelevance {
+  fn: import { updateItemRelevance } from "@src/server/operations",
+  entities: [Item]
+}
+
+// Activity Operations
+query getActivities {
+  fn: import { getActivities } from "@src/server/operations",
+  entities: [Activity]
+}
+
+// Tag Operations  
+query getTags {
+  fn: import { getTags } from "@src/server/operations",
+  entities: [Tag]
+}
+
+action createTag {
+  fn: import { createTag } from "@src/server/operations",
+  entities: [Tag]
+}

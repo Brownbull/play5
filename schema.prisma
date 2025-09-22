@@ -10,7 +10,58 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int        @id @default(autoincrement())
+  items      Item[]     // User's extracted items
+  tags       Tag[]      // User's custom tags
+  activities Activity[] // User's custom activities
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Item {
+  id          Int       @id @default(autoincrement())
+  content     String    // "Buy tomatoes", "Italian place downtown"
+  sourceNote  String?   // Original note text for context
+  relevance   Float     @default(1.0) // Learning score (0.0-1.0)
+  isCompleted Boolean   @default(false) // Task completion status
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        ItemTag[] // Many-to-many relationship
+  activityId  Int?
+  activity    Activity? @relation(fields: [activityId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // "groceries", "bucket-list", "recipes"
+  category  String    // "shopping", "travel", "cooking", "work"
+  color     String?   // For UI organization
+  items     ItemTag[] // Many-to-many relationship
+  userId    Int?      // User-specific or global tags
+  user      User?     @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+}
+
+model ItemTag {
+  id     Int  @id @default(autoincrement())
+  itemId Int
+  tagId  Int
+  item   Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@unique([itemId, tagId]) // Prevent duplicate tag assignments
+}
+
+model Activity {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // "Grocery Shopping", "Meal Planning"
+  description String?
+  icon        String?  // Emoji or icon name for UI
+  isDefault   Boolean  @default(false) // System default activities
+  userId      Int?     // User-specific or global activities
+  user        User?    @relation(fields: [userId], references: [id])
+  items       Item[]   // Items assigned to this activity
+  createdAt   DateTime @default(now())
 }
