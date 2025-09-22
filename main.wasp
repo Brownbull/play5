@@ -103,6 +103,16 @@ action testAIProvider {
 }
 
 action compareProviders {
-  fn: import { compareProviders } from "@src/server/operations", 
+  fn: import { compareProviders } from "@src/server/operations",
+  entities: [Tag]
+}
+
+action setAIProvider {
+  fn: import { setAIProvider } from "@src/server/operations",
+  entities: []
+}
+
+action testGoogleAI {
+  fn: import { testGoogleAI } from "@src/server/operations",
   entities: [Tag]
 }

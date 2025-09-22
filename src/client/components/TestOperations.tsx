@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  getItems, 
-  getActivities, 
-  getTags, 
-  createItem, 
-  updateItem, 
+import {
+  getItems,
+  getActivities,
+  getTags,
+  createItem,
+  updateItem,
   deleteItem,
   testAIConnection,
   testTagSuggestion,
   testAIProvider,
   compareProviders,
-  useQuery 
+  setAIProvider,
+  testGoogleAI,
+  useQuery
 } from 'wasp/client/operations';
 
 export function TestOperations() {
   const [testResults, setTestResults] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<'huggingface' | 'openai'>('huggingface');
+  const [selectedProvider, setSelectedProvider] = useState<'huggingface' | 'openai' | 'google'>('google');
   const [testText, setTestText] = useState("I need to buy tomatoes and cheese for making Italian pasta tonight");
 
   // Use queries to test data fetching
@@ -144,16 +146,16 @@ export function TestOperations() {
     setIsLoading(false);
   };
 
-  const testBothProviders = async () => {
+  const testAllProviders = async () => {
     setIsLoading(true);
     try {
       const result = await compareProviders({ text: testText });
-      
+
       if (result.error) {
         addResult(`❌ Provider comparison failed: ${result.error}`);
       } else {
-        addResult(`🔄 Comparing providers for "${testText}":`);
-        
+        addResult(`🔄 Comparing all providers for "${testText}":`);
+
         // HuggingFace results
         if (result.huggingface.status === 'fulfilled') {
           if (result.huggingface.tags.length > 0) {
@@ -164,7 +166,7 @@ export function TestOperations() {
         } else {
           addResult(`   🤗 HuggingFace: ❌ ${result.huggingface.error}`);
         }
-        
+
         // OpenAI results
         if (result.openai.status === 'fulfilled') {
           if (result.openai.tags.length > 0) {
@@ -175,11 +177,60 @@ export function TestOperations() {
         } else {
           addResult(`   🤖 OpenAI: ❌ ${result.openai.error}`);
         }
-        
+
+        // Google results
+        if (result.google.status === 'fulfilled') {
+          if (result.google.tags.length > 0) {
+            addResult(`   🟢 Google AI: ${result.google.tags.join(', ')}`);
+          } else {
+            addResult(`   🟢 Google AI: No tags suggested`);
+          }
+        } else {
+          addResult(`   🟢 Google AI: ❌ ${result.google.error}`);
+        }
+
         addResult(`ℹ️ Available tags in database: ${result.availableTagCount}`);
       }
     } catch (error) {
       addResult(`❌ Provider comparison failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testGoogleAISpecific = async () => {
+    setIsLoading(true);
+    try {
+      const result = await testGoogleAI({ text: testText });
+
+      if (result.error) {
+        addResult(`❌ Google AI test failed: ${result.error}`);
+      } else {
+        addResult(`✅ Google AI test for "${testText}":`);
+        if (result.suggestedTags.length > 0) {
+          addResult(`   📌 Suggested tags: ${result.suggestedTags.join(', ')}`);
+        } else {
+          addResult(`   📌 No relevant tags suggested`);
+        }
+        addResult(`ℹ️ Connection: ${result.connectionStatus.connected ? '✅ Connected' : '❌ Disconnected'}`);
+      }
+    } catch (error) {
+      addResult(`❌ Google AI test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const switchProvider = async () => {
+    setIsLoading(true);
+    try {
+      const result = await setAIProvider({ provider: selectedProvider });
+
+      if (result.success) {
+        addResult(`✅ AI provider switched to ${selectedProvider.toUpperCase()}`);
+      } else {
+        addResult(`❌ Failed to switch to ${selectedProvider.toUpperCase()}: ${result.error}`);
+      }
+    } catch (error) {
+      addResult(`❌ Provider switch failed: ${error}`);
     }
     setIsLoading(false);
   };
@@ -251,14 +302,24 @@ export function TestOperations() {
           {/* Provider Selection */}
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">AI Provider:</label>
-            <select
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value as 'huggingface' | 'openai')}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="huggingface">HuggingFace</option>
-              <option value="openai">OpenAI</option>
-            </select>
+            <div className="flex gap-2 items-center">
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value as 'huggingface' | 'openai' | 'google')}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="google">Google AI (Gemini)</option>
+                <option value="huggingface">HuggingFace</option>
+                <option value="openai">OpenAI</option>
+              </select>
+              <button
+                onClick={switchProvider}
+                disabled={isLoading}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded disabled:opacity-50 text-sm"
+              >
+                Set as Default
+              </button>
+            </div>
           </div>
 
           {/* Test Buttons */}
@@ -282,18 +343,29 @@ export function TestOperations() {
               disabled={isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
             >
-              Test {selectedProvider === 'huggingface' ? 'HuggingFace' : 'OpenAI'}
+              Test {selectedProvider === 'huggingface' ? 'HuggingFace' : selectedProvider === 'openai' ? 'OpenAI' : 'Google AI'}
             </button>
+            {selectedProvider === 'google' && (
+              <button
+                onClick={testGoogleAISpecific}
+                disabled={isLoading}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+              >
+                Test Google AI (Detailed)
+              </button>
+            )}
             <button
-              onClick={testBothProviders}
+              onClick={testAllProviders}
               disabled={isLoading}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+              className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded disabled:opacity-50"
             >
-              Compare Both Providers
+              Compare All Providers
             </button>
           </div>
           <p className="text-sm text-gray-500">
-            Note: AI features require API keys in .env.server (HUGGINGFACE_API_KEY, OPENAI_API_KEY)
+            Note: AI features require API keys in .env.server (HUGGINGFACE_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY)
+            <br />
+            HuggingFace now uses DistilBERT with semantic embeddings for improved tag matching.
           </p>
         </div>
       </div>

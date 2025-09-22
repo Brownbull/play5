@@ -1,8 +1,9 @@
 import { HuggingFaceService, aiService as hfService } from './huggingface'
 import { OpenAIService, openAIService } from './openai'
+import { GoogleAIService, googleAIService } from './google'
 
 // Environment variable to select AI provider
-const AI_PROVIDER = process.env.AI_PROVIDER || 'huggingface'
+const AI_PROVIDER = process.env.AI_PROVIDER || 'google'
 
 // Unified interfaces
 export interface AIServiceStatus {
@@ -23,11 +24,13 @@ export class UnifiedAIService {
   private provider: string
   private hfService: HuggingFaceService
   private openaiService: OpenAIService
+  private googleService: GoogleAIService
 
   private constructor() {
     this.provider = AI_PROVIDER
     this.hfService = hfService
     this.openaiService = openAIService
+    this.googleService = googleAIService
   }
 
   public static getInstance(): UnifiedAIService {
@@ -43,7 +46,7 @@ export class UnifiedAIService {
   }
 
   // Set provider dynamically
-  setProvider(provider: 'huggingface' | 'openai'): void {
+  setProvider(provider: 'huggingface' | 'openai' | 'google'): void {
     this.provider = provider
   }
 
@@ -55,6 +58,12 @@ export class UnifiedAIService {
         return {
           ...result,
           provider: 'openai'
+        }
+      } else if (this.provider === 'google') {
+        const result = await this.googleService.testConnection()
+        return {
+          ...result,
+          provider: 'google'
         }
       } else {
         const result = await this.hfService.testConnection()
@@ -74,13 +83,19 @@ export class UnifiedAIService {
   }
 
   // Test connection with specific provider
-  async testConnectionWithProvider(provider: 'huggingface' | 'openai'): Promise<AIServiceStatus> {
+  async testConnectionWithProvider(provider: 'huggingface' | 'openai' | 'google'): Promise<AIServiceStatus> {
     try {
       if (provider === 'openai') {
         const result = await this.openaiService.testConnection()
         return {
           ...result,
           provider: 'openai'
+        }
+      } else if (provider === 'google') {
+        const result = await this.googleService.testConnection()
+        return {
+          ...result,
+          provider: 'google'
         }
       } else {
         const result = await this.hfService.testConnection()
@@ -104,6 +119,8 @@ export class UnifiedAIService {
     try {
       if (this.provider === 'openai') {
         return await this.openaiService.suggestTags(itemContent, availableTags)
+      } else if (this.provider === 'google') {
+        return await this.googleService.suggestTags(itemContent, availableTags)
       } else {
         return await this.hfService.suggestTags(itemContent, availableTags)
       }
@@ -115,22 +132,24 @@ export class UnifiedAIService {
 
   // Suggest tags with specific provider
   async suggestTagsWithProvider(
-    itemContent: string, 
-    availableTags: string[], 
-    provider: 'huggingface' | 'openai'
+    itemContent: string,
+    availableTags: string[],
+    provider: 'huggingface' | 'openai' | 'google'
   ): Promise<{ tags: string[], provider: string, error?: string }> {
     try {
       let tags: string[]
       if (provider === 'openai') {
         tags = await this.openaiService.suggestTags(itemContent, availableTags)
+      } else if (provider === 'google') {
+        tags = await this.googleService.suggestTags(itemContent, availableTags)
       } else {
         tags = await this.hfService.suggestTags(itemContent, availableTags)
       }
       return { tags, provider }
     } catch (error) {
       console.error(`Tag suggestion failed with ${provider}:`, error)
-      return { 
-        tags: [], 
+      return {
+        tags: [],
         provider,
         error: error instanceof Error ? error.message : 'Unknown error'
       }
@@ -142,6 +161,8 @@ export class UnifiedAIService {
     try {
       if (this.provider === 'openai') {
         return await this.openaiService.parseNote(noteText)
+      } else if (this.provider === 'google') {
+        return await this.googleService.parseNote(noteText)
       } else {
         return await this.hfService.parseNote(noteText)
       }
@@ -156,6 +177,8 @@ export class UnifiedAIService {
     try {
       if (this.provider === 'openai') {
         return await this.openaiService.generateText(prompt, maxLength)
+      } else if (this.provider === 'google') {
+        return await this.googleService.generateText(prompt, maxLength)
       } else {
         return await this.hfService.generateText(prompt, maxLength)
       }
@@ -170,4 +193,4 @@ export class UnifiedAIService {
 export const aiService = UnifiedAIService.getInstance()
 
 // Export individual services for direct access if needed
-export { hfService, openAIService }
+export { hfService, openAIService, googleAIService }

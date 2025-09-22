@@ -1,8 +1,8 @@
 import { HttpError } from 'wasp/server'
-import type { 
-  GetItems, 
-  CreateItem, 
-  UpdateItem, 
+import type {
+  GetItems,
+  CreateItem,
+  UpdateItem,
   DeleteItem,
   GetActivities,
   GetTags,
@@ -11,7 +11,9 @@ import type {
   TestAIConnection,
   TestTagSuggestion,
   TestAIProvider,
-  CompareProviders
+  CompareProviders,
+  SetAIProvider,
+  TestGoogleAI
 } from 'wasp/server/operations'
 import type { Item, Tag, Activity } from 'wasp/entities'
 import { aiService } from './ai/index'
@@ -383,7 +385,7 @@ export const testTagSuggestion: TestTagSuggestion<TestTagSuggestionInput, any> =
 }
 
 type TestAIProviderInput = {
-  provider: 'huggingface' | 'openai';
+  provider: 'huggingface' | 'openai' | 'google';
   text: string;
 }
 
@@ -462,10 +464,11 @@ export const compareProviders: CompareProviders<CompareProvidersInput, any> = as
 
     const tagNames = availableTags.map(tag => tag.name);
 
-    // Test both providers in parallel
-    const [hfResult, openaiResult] = await Promise.allSettled([
+    // Test all three providers in parallel
+    const [hfResult, openaiResult, googleResult] = await Promise.allSettled([
       aiService.suggestTagsWithProvider(args.text, tagNames, 'huggingface'),
-      aiService.suggestTagsWithProvider(args.text, tagNames, 'openai')
+      aiService.suggestTagsWithProvider(args.text, tagNames, 'openai'),
+      aiService.suggestTagsWithProvider(args.text, tagNames, 'google')
     ]);
 
     return {
@@ -481,6 +484,11 @@ export const compareProviders: CompareProviders<CompareProvidersInput, any> = as
         status: openaiResult.status,
         tags: openaiResult.status === 'fulfilled' ? openaiResult.value.tags : [],
         error: openaiResult.status === 'fulfilled' ? openaiResult.value.error : openaiResult.reason?.message
+      },
+      google: {
+        status: googleResult.status,
+        tags: googleResult.status === 'fulfilled' ? googleResult.value.tags : [],
+        error: googleResult.status === 'fulfilled' ? googleResult.value.error : googleResult.reason?.message
       }
     };
   } catch (error) {
@@ -488,6 +496,105 @@ export const compareProviders: CompareProviders<CompareProvidersInput, any> = as
       timestamp: new Date().toISOString(),
       input: args.text,
       error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+type SetAIProviderInput = {
+  provider: 'huggingface' | 'openai' | 'google';
+}
+
+export const setAIProvider: SetAIProvider<SetAIProviderInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    // Test the provider before setting it
+    const connectionStatus = await aiService.testConnectionWithProvider(args.provider);
+
+    if (!connectionStatus.connected) {
+      return {
+        timestamp: new Date().toISOString(),
+        success: false,
+        provider: args.provider,
+        error: connectionStatus.error || 'Provider not available'
+      };
+    }
+
+    // Set the provider
+    aiService.setProvider(args.provider);
+
+    return {
+      timestamp: new Date().toISOString(),
+      success: true,
+      provider: args.provider,
+      previousProvider: aiService.getProvider(),
+      message: `AI provider switched to ${args.provider}`
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      success: false,
+      provider: args.provider,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+type TestGoogleAIInput = {
+  text: string;
+}
+
+export const testGoogleAI: TestGoogleAI<TestGoogleAIInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    // Test Google AI connection first
+    const connectionStatus = await aiService.testConnectionWithProvider('google');
+
+    if (!connectionStatus.connected) {
+      return {
+        timestamp: new Date().toISOString(),
+        provider: 'google',
+        input: args.text,
+        connectionStatus,
+        suggestedTags: [],
+        error: connectionStatus.error || 'Google AI not connected'
+      };
+    }
+
+    // Get available tags from database
+    const availableTags = await context.entities.Tag.findMany({
+      where: {
+        userId: null // Global tags only
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const tagNames = availableTags.map(tag => tag.name);
+    const result = await aiService.suggestTagsWithProvider(args.text, tagNames, 'google');
+
+    return {
+      timestamp: new Date().toISOString(),
+      provider: 'google',
+      input: args.text,
+      availableTagCount: tagNames.length,
+      connectionStatus,
+      suggestedTags: result.tags,
+      error: result.error
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      provider: 'google',
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      suggestedTags: []
     };
   }
 }
