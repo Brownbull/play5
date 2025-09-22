@@ -40,11 +40,11 @@ An adaptive external brain that transforms messy notes into structured, actionab
 
 ## > **Phase 2: AI Integration**
 
-- [ ] **Task 4: Set up Hugging Face API integration for AI/ML models**
-  - [ ] Install @huggingface/inference package
-  - [ ] Configure API keys and environment variables
-  - [ ] Create AI service module for model calls
-  - [ ] Test basic model connectivity
+- [x] **Task 4: Set up Hugging Face API integration for AI/ML models**
+  - [x] Install @huggingface/inference package
+  - [x] Configure API keys and environment variables
+  - [x] Create AI service module for model calls
+  - [x] Test basic model connectivity
 
 - [ ] **Task 5: Implement note parsing pipeline with NER and classification**
   - [ ] Build named entity recognition pipeline

@@ -2,8 +2,10 @@
   "name": "play5",
   "type": "module",
   "dependencies": {
+    "@huggingface/inference": "^4.8.0",
     "@tailwindcss/forms": "^0.5.10",
     "autoprefixer": "^10.4.21",
+    "openai": "^5.22.0",
     "postcss": "^8.5.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

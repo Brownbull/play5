@@ -14,8 +14,15 @@ This is a **Wasp project** (version 0.17.1) - a full-stack web application built
 - `wasp clean` - Delete all generated code and cached artifacts (equivalent to "turn it off and on again")
 
 ### Database
-- `wasp db migrate-dev "description"` - Create and apply database migration after schema changes
+- `wasp db migrate-dev --name "description"` - Create and apply database migration after schema changes
+- `npx ts-node --esm src/server/seed.ts` - Seed database with default data
 - `wasp db` - Show database command options
+
+### AI Integration
+- **Setup**: Add `HUGGINGFACE_API_KEY` to `.env.server` file
+- **API Key**: Get free key from https://huggingface.co/settings/tokens
+- **AI Service**: Located in `src/server/ai/huggingface.ts`
+- **Testing**: Use "Test AI Connection" button in dashboard after login
 
 ### Build & Deploy
 - `wasp build` - Generate production code ready for deployment

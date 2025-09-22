@@ -6,12 +6,18 @@ import {
   createItem, 
   updateItem, 
   deleteItem,
+  testAIConnection,
+  testTagSuggestion,
+  testAIProvider,
+  compareProviders,
   useQuery 
 } from 'wasp/client/operations';
 
 export function TestOperations() {
   const [testResults, setTestResults] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'huggingface' | 'openai'>('huggingface');
+  const [testText, setTestText] = useState("I need to buy tomatoes and cheese for making Italian pasta tonight");
 
   // Use queries to test data fetching
   const { data: activities } = useQuery(getActivities);
@@ -76,6 +82,108 @@ export function TestOperations() {
     setIsLoading(false);
   };
 
+  const testAIConnectionStatus = async () => {
+    setIsLoading(true);
+    try {
+      const result = await testAIConnection();
+      if (result.connected) {
+        addResult(`✅ AI Connected: API configured and working`);
+      } else {
+        addResult(`❌ AI Failed: ${result.error || 'Unknown error'}`);
+        if (!result.apiKeyConfigured) {
+          addResult(`ℹ️ Set HUGGINGFACE_API_KEY in .env.server`);
+        }
+      }
+    } catch (error) {
+      addResult(`❌ AI Test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testTagSuggestionAI = async () => {
+    setIsLoading(true);
+    try {
+      const result = await testTagSuggestion({ text: testText });
+      
+      if (result.error) {
+        addResult(`❌ Tag suggestion failed: ${result.error}`);
+      } else {
+        addResult(`✅ ${result.provider.toUpperCase()} Tag suggestions for "${testText}":`);
+        if (result.suggestedTags.length > 0) {
+          addResult(`   📌 Suggested tags: ${result.suggestedTags.join(', ')}`);
+        } else {
+          addResult(`   📌 No relevant tags suggested`);
+        }
+        addResult(`ℹ️ Available tags in database: ${result.availableTagCount}`);
+      }
+    } catch (error) {
+      addResult(`❌ Tag suggestion test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testSpecificProvider = async () => {
+    setIsLoading(true);
+    try {
+      const result = await testAIProvider({ provider: selectedProvider, text: testText });
+      
+      if (result.error) {
+        addResult(`❌ ${selectedProvider.toUpperCase()} test failed: ${result.error}`);
+      } else {
+        addResult(`✅ ${selectedProvider.toUpperCase()} test for "${testText}":`);
+        if (result.suggestedTags.length > 0) {
+          addResult(`   📌 Suggested tags: ${result.suggestedTags.join(', ')}`);
+        } else {
+          addResult(`   📌 No relevant tags suggested`);
+        }
+        addResult(`ℹ️ Connection: ${result.connectionStatus.connected ? '✅ Connected' : '❌ Disconnected'}`);
+      }
+    } catch (error) {
+      addResult(`❌ ${selectedProvider.toUpperCase()} test failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
+  const testBothProviders = async () => {
+    setIsLoading(true);
+    try {
+      const result = await compareProviders({ text: testText });
+      
+      if (result.error) {
+        addResult(`❌ Provider comparison failed: ${result.error}`);
+      } else {
+        addResult(`🔄 Comparing providers for "${testText}":`);
+        
+        // HuggingFace results
+        if (result.huggingface.status === 'fulfilled') {
+          if (result.huggingface.tags.length > 0) {
+            addResult(`   🤗 HuggingFace: ${result.huggingface.tags.join(', ')}`);
+          } else {
+            addResult(`   🤗 HuggingFace: No tags suggested`);
+          }
+        } else {
+          addResult(`   🤗 HuggingFace: ❌ ${result.huggingface.error}`);
+        }
+        
+        // OpenAI results
+        if (result.openai.status === 'fulfilled') {
+          if (result.openai.tags.length > 0) {
+            addResult(`   🤖 OpenAI: ${result.openai.tags.join(', ')}`);
+          } else {
+            addResult(`   🤖 OpenAI: No tags suggested`);
+          }
+        } else {
+          addResult(`   🤖 OpenAI: ❌ ${result.openai.error}`);
+        }
+        
+        addResult(`ℹ️ Available tags in database: ${result.availableTagCount}`);
+      }
+    } catch (error) {
+      addResult(`❌ Provider comparison failed: ${error}`);
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-4">Operations Test Panel</h2>
@@ -97,28 +205,97 @@ export function TestOperations() {
       </div>
 
       {/* Test Actions */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={testCreateItem}
-          disabled={isLoading}
-          className="btn-primary disabled:opacity-50"
-        >
-          Create Test Item
-        </button>
-        <button
-          onClick={testUpdateItem}
-          disabled={isLoading || !items?.length}
-          className="btn-secondary disabled:opacity-50"
-        >
-          Update First Item
-        </button>
-        <button
-          onClick={testDeleteItem}
-          disabled={isLoading || !items?.length}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          Delete Last Item
-        </button>
+      <div className="space-y-3">
+        <div>
+          <h3 className="font-semibold text-gray-700 mb-2">CRUD Operations</h3>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={testCreateItem}
+              disabled={isLoading}
+              className="btn-primary disabled:opacity-50"
+            >
+              Create Test Item
+            </button>
+            <button
+              onClick={testUpdateItem}
+              disabled={isLoading || !items?.length}
+              className="btn-secondary disabled:opacity-50"
+            >
+              Update First Item
+            </button>
+            <button
+              onClick={testDeleteItem}
+              disabled={isLoading || !items?.length}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Delete Last Item
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-700 mb-2">AI Integration</h3>
+          
+          {/* Test Text Input */}
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Test Text:</label>
+            <input
+              type="text"
+              value={testText}
+              onChange={(e) => setTestText(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter text to test tag suggestions..."
+            />
+          </div>
+
+          {/* Provider Selection */}
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">AI Provider:</label>
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value as 'huggingface' | 'openai')}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="huggingface">HuggingFace</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </div>
+
+          {/* Test Buttons */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            <button
+              onClick={testAIConnectionStatus}
+              disabled={isLoading}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test Default Connection
+            </button>
+            <button
+              onClick={testTagSuggestionAI}
+              disabled={isLoading}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test Default Provider
+            </button>
+            <button
+              onClick={testSpecificProvider}
+              disabled={isLoading}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Test {selectedProvider === 'huggingface' ? 'HuggingFace' : 'OpenAI'}
+            </button>
+            <button
+              onClick={testBothProviders}
+              disabled={isLoading}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            >
+              Compare Both Providers
+            </button>
+          </div>
+          <p className="text-sm text-gray-500">
+            Note: AI features require API keys in .env.server (HUGGINGFACE_API_KEY, OPENAI_API_KEY)
+          </p>
+        </div>
       </div>
 
       {/* Test Results */}

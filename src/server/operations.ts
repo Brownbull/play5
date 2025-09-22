@@ -7,9 +7,14 @@ import type {
   GetActivities,
   GetTags,
   CreateTag,
-  UpdateItemRelevance
+  UpdateItemRelevance,
+  TestAIConnection,
+  TestTagSuggestion,
+  TestAIProvider,
+  CompareProviders
 } from 'wasp/server/operations'
 import type { Item, Tag, Activity } from 'wasp/entities'
+import { aiService } from './ai/index'
 
 // ============================================================================
 // ITEM OPERATIONS
@@ -309,4 +314,180 @@ export const createTag: CreateTag<CreateTagInput, Tag> = async (args, context) =
       userId: context.user.id // User-specific tag
     }
   });
+}
+
+// ============================================================================
+// AI OPERATIONS
+// ============================================================================
+
+export const testAIConnection: TestAIConnection<void, any> = async (_args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    const status = await aiService.testConnection();
+    return {
+      timestamp: new Date().toISOString(),
+      ...status
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      connected: false,
+      apiKeyConfigured: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+type TestTagSuggestionInput = {
+  text: string;
+}
+
+export const testTagSuggestion: TestTagSuggestion<TestTagSuggestionInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    // Get available tags from database
+    const availableTags = await context.entities.Tag.findMany({
+      where: {
+        userId: null // Global tags only
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const tagNames = availableTags.map(tag => tag.name);
+    const suggestedTags = await aiService.suggestTags(args.text, tagNames);
+
+    return {
+      timestamp: new Date().toISOString(),
+      provider: aiService.getProvider(),
+      input: args.text,
+      availableTagCount: tagNames.length,
+      suggestedTags: suggestedTags
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      provider: aiService.getProvider(),
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      suggestedTags: []
+    };
+  }
+}
+
+type TestAIProviderInput = {
+  provider: 'huggingface' | 'openai';
+  text: string;
+}
+
+export const testAIProvider: TestAIProvider<TestAIProviderInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    // Test connection first
+    const connectionStatus = await aiService.testConnectionWithProvider(args.provider);
+    
+    if (!connectionStatus.connected) {
+      return {
+        timestamp: new Date().toISOString(),
+        provider: args.provider,
+        input: args.text,
+        connectionStatus,
+        suggestedTags: [],
+        error: connectionStatus.error || 'Provider not connected'
+      };
+    }
+
+    // Get available tags from database
+    const availableTags = await context.entities.Tag.findMany({
+      where: {
+        userId: null // Global tags only
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const tagNames = availableTags.map(tag => tag.name);
+    const result = await aiService.suggestTagsWithProvider(args.text, tagNames, args.provider);
+
+    return {
+      timestamp: new Date().toISOString(),
+      provider: args.provider,
+      input: args.text,
+      availableTagCount: tagNames.length,
+      connectionStatus,
+      suggestedTags: result.tags,
+      error: result.error
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      provider: args.provider,
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      suggestedTags: []
+    };
+  }
+}
+
+type CompareProvidersInput = {
+  text: string;
+}
+
+export const compareProviders: CompareProviders<CompareProvidersInput, any> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  try {
+    // Get available tags from database
+    const availableTags = await context.entities.Tag.findMany({
+      where: {
+        userId: null // Global tags only
+      },
+      select: {
+        name: true
+      }
+    });
+
+    const tagNames = availableTags.map(tag => tag.name);
+
+    // Test both providers in parallel
+    const [hfResult, openaiResult] = await Promise.allSettled([
+      aiService.suggestTagsWithProvider(args.text, tagNames, 'huggingface'),
+      aiService.suggestTagsWithProvider(args.text, tagNames, 'openai')
+    ]);
+
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      availableTagCount: tagNames.length,
+      huggingface: {
+        status: hfResult.status,
+        tags: hfResult.status === 'fulfilled' ? hfResult.value.tags : [],
+        error: hfResult.status === 'fulfilled' ? hfResult.value.error : hfResult.reason?.message
+      },
+      openai: {
+        status: openaiResult.status,
+        tags: openaiResult.status === 'fulfilled' ? openaiResult.value.tags : [],
+        error: openaiResult.status === 'fulfilled' ? openaiResult.value.error : openaiResult.reason?.message
+      }
+    };
+  } catch (error) {
+    return {
+      timestamp: new Date().toISOString(),
+      input: args.text,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
 }

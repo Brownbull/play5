@@ -85,3 +85,24 @@ action createTag {
   fn: import { createTag } from "@src/server/operations",
   entities: [Tag]
 }
+
+// AI Operations
+action testAIConnection {
+  fn: import { testAIConnection } from "@src/server/operations",
+  entities: []
+}
+
+action testTagSuggestion {
+  fn: import { testTagSuggestion } from "@src/server/operations", 
+  entities: [Tag]
+}
+
+action testAIProvider {
+  fn: import { testAIProvider } from "@src/server/operations", 
+  entities: [Tag]
+}
+
+action compareProviders {
+  fn: import { compareProviders } from "@src/server/operations", 
+  entities: [Tag]
+}
